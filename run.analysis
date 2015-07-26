@@ -1,0 +1,533 @@
+# Loads necessary Libraries
+library(plyr)
+library(dplyr)
+
+# Loads data, labels, and subjects into R
+trainData <- read.table("./UCI HAR Dataset/train/X_train.txt", sep = "", header = FALSE)
+trainLab <- read.table("./UCI HAR Dataset/train/y_train.txt", sep = "", header = FALSE)
+testData <- read.table("./UCI HAR Dataset/test/X_test.txt", sep = "", header = FALSE)
+testLab <- read.table("./UCI HAR Dataset/test/y_test.txt", sep = "", header = FALSE)
+testSub <- read.table("./UCI HAR Dataset/test/subject_test.txt", sep = "", header = FALSE)
+trainSub <- read.table("./UCI HAR Dataset/train/subject_train.txt", sep = "", header = FALSE)
+
+# Coerce trainData, testData, trainLab, and testLab to data frames
+trainData <- as.data.frame(trainData, row.names = NULL)
+testData <- as.data.frame(testData, row.names = NULL)
+trainLab <- as.data.frame(trainLab, row.names = NULL)
+testLab <- as.data.frame(testLab, row.names = NULL)
+
+# Rename trainSub and testSub columns as 'Subject' for readability
+trainSub <- rename(trainSub, Subject = V1)
+testSub <- rename(testSub, Subject = V1)
+
+# Rename trainLab and testLab columns as 'Activity' for readability
+trainLab <- rename(trainLab, Activity = V1)
+testLab <- rename(testLab, Activity = V1)
+
+# Merge testData with testLab and trainData with trainLab
+trainData <- cbind(trainLab, trainData)
+testData <- cbind(testLab, testData)
+
+# Merge testData with testSub and trainData with trainSub
+trainData <- cbind(trainSub, trainData)
+testData <- cbind(testSub, testData)
+
+# Merge testData and trainData
+tdata <- rbind(testData, trainData)
+
+# Creates a subset only containing the subject, activity, average, standard deviation measurements for tdata
+newdata <- select(tdata, Subject:V6, V41:V46, V81:V86, V121:V126, V161:V166, V201:V202, V214:V215, V227:V228,
+                  V240:V241, V253:V254, V266:V271, V345:V350, V424:V429, V503:V504, V516:V517, V529:V530,
+                  V542:V543) 
+
+# Renames columns of newdata with human-readable names
+newdata <- rename(newdata, "tX_Mean_BodyAcc"=V1, "tY_Mean_BodyAcc"=V2, "tZ_Mean_BodyAcc"=V3,
+                  "tX_STD_BodyAcc"=V4, "tY_STD_BodyAcc"=V5, "tZ_STD_BodyAcc"=V6, "tX_Mean_GravityAcc"=V41,
+                  "tY_Mean GravityAcc"=V41, "tZ_Mean_GravityAcc"=V43, "tX_STD_GravityAcc"=V44,
+                  "tY_STD GravityAcc"=V45, "tZ_STD_GravityAcc"=V46, "tX_Mean_JerkBodyAcc"=V81,
+                  "tY_Mean JerkBodyAcc"=V82, "tZ_Mean_JerkBodyAcc"=V83, "tX_STD_JerkBodyAcc"=V84,
+                  "tY_STD JerkBodyAcc"=V85, "tZ_STD_JerkBodyAcc"=V86, "tX_Mean_BodyGyro"=V121,
+                  "tY_Mean BodyGyro"=V122, "tZ_Mean_BodyGyro"=V123, "tX_STD_BodyGyro"=V124,
+                  "tY_STD BodyGyro"=V125, "tZ_STD_BodyGyro"=V126, "tX_Mean_JerkBodyGyro"=V161,
+                  "tY_Mean JerkBodyGyro"=V162, "tZ_Mean_JerkBodyGyro"=V163, "tX_STD_JerkBodyGyro"=V164,
+                  "tY_STD JerkBodyGyro"=V165, "tZ_STD_JerkBodyGyro"=V166, "tMag_Mean_BodyAcc"=V201,
+                  "tMag_STD BodyAcc"=V202, "tMag_Mean_GravityAcc"=V214, "tMag_STD_GravityAcc"=V215,
+                  "tMag_Mean JerkBodyAcc"=V227, "tMag_STD_JerkBodyAcc"=V228, "tMag_Mean_BodyGyro"=V240,
+                  "tMag_STD BodyGyro"=V241, "tMag_Mean_JerkBodyGyro"=V253, "tMag_STD_JerkBodyGyro"=V254,
+                  "fX_Mean BodyAcc"=V266, "fY_Mean_BodyAcc"=V267, "fZ_Mean_BodyAcc"=V268,
+                  "fX_STD BodyAcc"=V269, "fY_STD_BodyAcc"=V270, "fZ_STD_BodyAcc"=V271,
+                  "fX_Mean JerkBodyAcc"=V345, "fY_Mean_JerkBodyAcc"=V346, "fZ_Mean_JerkBodyAcc"=V347,
+                  "fX_STD JerkBodyAcc"=V348, "fY_STD_JerkBodyAcc"=V349, "fZ_STD_JerkBodyAcc"=V350,
+                  "fX_Mean BodyGyro"=V424, "fY_Mean_BodyGyro"=V425, "fZ_Mean_BodyGyro"=V426,
+                  "fX_STD BodyGyro"=V427, "fY_STD_BodyGyro"=V428, "fZ_STD_BodyGyro"=V429,
+                  "fMag_Mean BodyAcc"=V503, "fMag_STD_BodyAcc"=V504, "fMag_Mean_JerkBodyAcc"=V516,
+                  "fMag_STD JerkBodyAcc"=V517, "fMag_Mean_BodyGyro"=V529, "fMag_STD_BodyGyro"=V530,
+                  "fMag_Mean JerkBodyGyro"=V542, "fMag_STD_JerkBodyGyro"=V543)
+               
+# Sorts newdata by the Subject column
+newdata <- arrange(newdata, Subject)
+
+# Takes the average of the columns for Subject 1 when Walking, Walking Upstairs, Walking Downstairs,
+# Sitting, Standing, and Laying
+sub1 <- filter(newdata, Subject == 1, Activity == 1)
+Sub1Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 1, Activity == 2)
+Sub1WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 1, Activity == 3)
+Sub1WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 1, Activity == 4)
+Sub1Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 1, Activity == 5)
+Sub1Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 1, Activity == 6)
+Sub1Lay <- colMeans(sub6)
+Subject1 <- rbind(Sub1Walk, Sub1WalkUp, Sub1WalkDown, Sub1Sit, Sub1Stand, Sub1Lay, deparse.level = 0)
+
+# Repeat comment in line 70 for Subject 2
+sub1 <- filter(newdata, Subject == 2, Activity == 1)
+Sub2Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 2, Activity == 2)
+Sub2WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 2, Activity == 3)
+Sub2WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 2, Activity == 4)
+Sub2Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 2, Activity == 5)
+Sub2Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 2, Activity == 6)
+Sub2Lay <- colMeans(sub6)
+Subject2 <- rbind(Sub2Walk, Sub2WalkUp, Sub2WalkDown, Sub2Sit, Sub2Stand, Sub2Lay, deparse.level = 0)
+
+# Subject 3
+sub1 <- filter(newdata, Subject == 3, Activity == 1)
+Sub3Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 3, Activity == 2)
+Sub3WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 3, Activity == 3)
+Sub3WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 3, Activity == 4)
+Sub3Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 3, Activity == 5)
+Sub3Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 3, Activity == 6)
+Sub3Lay <- colMeans(sub6)
+Subject3 <- rbind(Sub3Walk, Sub3WalkUp, Sub3WalkDown, Sub3Sit, Sub3Stand, Sub3Lay, deparse.level = 0)
+
+# Subject 4
+sub1 <- filter(newdata, Subject == 4, Activity == 1)
+Sub4Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 4, Activity == 2)
+Sub4WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 4, Activity == 3)
+Sub4WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 4, Activity == 4)
+Sub4Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 4, Activity == 5)
+Sub4Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 4, Activity == 6)
+Sub4Lay <- colMeans(sub6)
+Subject4 <- rbind(Sub4Walk, Sub4WalkUp, Sub4WalkDown, Sub4Sit, Sub4Stand, Sub4Lay, deparse.level = 0)
+
+# Subject 5
+sub1 <- filter(newdata, Subject == 5, Activity == 1)
+Sub5Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 5, Activity == 2)
+Sub5WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 5, Activity == 3)
+Sub5WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 5, Activity == 4)
+Sub5Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 5, Activity == 5)
+Sub5Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 5, Activity == 6)
+Sub5Lay <- colMeans(sub6)
+Subject5 <- rbind(Sub5Walk, Sub5WalkUp, Sub5WalkDown, Sub5Sit, Sub5Stand, Sub5Lay, deparse.level = 0)
+
+# Subject 6
+sub1 <- filter(newdata, Subject == 6, Activity == 1)
+Sub6Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 6, Activity == 2)
+Sub6WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 6, Activity == 3)
+Sub6WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 6, Activity == 4)
+Sub6Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 6, Activity == 5)
+Sub6Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 6, Activity == 6)
+Sub6Lay <- colMeans(sub6)
+Subject6 <- rbind(Sub6Walk, Sub6WalkUp, Sub6WalkDown, Sub6Sit, Sub6Stand, Sub6Lay, deparse.level = 0)
+
+# Subject 7
+sub1 <- filter(newdata, Subject == 7, Activity == 1)
+Sub7Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 7, Activity == 2)
+Sub7WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 7, Activity == 3)
+Sub7WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 7, Activity == 4)
+Sub7Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 7, Activity == 5)
+Sub7Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 7, Activity == 6)
+Sub7Lay <- colMeans(sub6)
+Subject7 <- rbind(Sub7Walk, Sub7WalkUp, Sub7WalkDown, Sub7Sit, Sub7Stand, Sub7Lay, deparse.level = 0)
+
+# Subject 8
+sub1 <- filter(newdata, Subject == 8, Activity == 1)
+Sub8Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 8, Activity == 2)
+Sub8WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 8, Activity == 3)
+Sub8WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 8, Activity == 4)
+Sub8Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 8, Activity == 5)
+Sub8Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 8, Activity == 6)
+Sub8Lay <- colMeans(sub6)
+Subject8 <- rbind(Sub8Walk, Sub8WalkUp, Sub8WalkDown, Sub8Sit, Sub8Stand, Sub8Lay, deparse.level = 0)
+
+# Subject 9
+sub1 <- filter(newdata, Subject == 9, Activity == 1)
+Sub9Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 9, Activity == 2)
+Sub9WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 9, Activity == 3)
+Sub9WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 9, Activity == 4)
+Sub9Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 9, Activity == 5)
+Sub9Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 9, Activity == 6)
+Sub9Lay <- colMeans(sub6)
+Subject9 <- rbind(Sub9Walk, Sub9WalkUp, Sub9WalkDown, Sub9Sit, Sub9Stand, Sub9Lay, deparse.level = 0)
+
+# Subject 10
+sub1 <- filter(newdata, Subject == 10, Activity == 1)
+Sub10Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 10, Activity == 2)
+Sub10WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 10, Activity == 3)
+Sub10WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 10, Activity == 4)
+Sub10Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 10, Activity == 5)
+Sub10Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 10, Activity == 6)
+Sub10Lay <- colMeans(sub6)
+Subject10 <- rbind(Sub10Walk, Sub10WalkUp, Sub10WalkDown, Sub10Sit, Sub10Stand, Sub10Lay, deparse.level = 0)
+
+# Subject 11
+sub1 <- filter(newdata, Subject == 11, Activity == 1)
+Sub11Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 11, Activity == 2)
+Sub11WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 11, Activity == 3)
+Sub11WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 11, Activity == 4)
+Sub11Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 11, Activity == 5)
+Sub11Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 11, Activity == 6)
+Sub11Lay <- colMeans(sub6)
+Subject11 <- rbind(Sub11Walk, Sub11WalkUp, Sub11WalkDown, Sub11Sit, Sub11Stand, Sub11Lay, deparse.level = 0)
+
+# Subject 12
+sub1 <- filter(newdata, Subject == 12, Activity == 1)
+Sub12Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 12, Activity == 2)
+Sub12WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 12, Activity == 3)
+Sub12WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 12, Activity == 4)
+Sub12Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 12, Activity == 5)
+Sub12Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 12, Activity == 6)
+Sub12Lay <- colMeans(sub6)
+Subject12 <- rbind(Sub12Walk, Sub12WalkUp, Sub12WalkDown, Sub12Sit, Sub12Stand, Sub12Lay, deparse.level = 0)
+
+# Subject 13
+sub1 <- filter(newdata, Subject == 13, Activity == 1)
+Sub13Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 13, Activity == 2)
+Sub13WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 13, Activity == 3)
+Sub13WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 13, Activity == 4)
+Sub13Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 13, Activity == 5)
+Sub13Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 13, Activity == 6)
+Sub13Lay <- colMeans(sub6)
+Subject13 <- rbind(Sub13Walk, Sub13WalkUp, Sub13WalkDown, Sub13Sit, Sub13Stand, Sub13Lay, deparse.level = 0)
+
+# Subject 14
+sub1 <- filter(newdata, Subject == 14, Activity == 1)
+Sub14Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 14, Activity == 2)
+Sub14WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 14, Activity == 3)
+Sub14WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 14, Activity == 4)
+Sub14Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 14, Activity == 5)
+Sub14Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 14, Activity == 6)
+Sub14Lay <- colMeans(sub6)
+Subject14 <- rbind(Sub14Walk, Sub14WalkUp, Sub14WalkDown, Sub14Sit, Sub14Stand, Sub14Lay, deparse.level = 0)
+
+# Subject 15
+sub1 <- filter(newdata, Subject == 15, Activity == 1)
+Sub15Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 15, Activity == 2)
+Sub15WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 15, Activity == 3)
+Sub15WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 15, Activity == 4)
+Sub15Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 15, Activity == 5)
+Sub15Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 15, Activity == 6)
+Sub15Lay <- colMeans(sub6)
+Subject15 <- rbind(Sub15Walk, Sub15WalkUp, Sub15WalkDown, Sub15Sit, Sub15Stand, Sub15Lay, deparse.level = 0)
+
+# Subject 16
+sub1 <- filter(newdata, Subject == 16, Activity == 1)
+Sub16Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 16, Activity == 2)
+Sub16WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 16, Activity == 3)
+Sub16WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 16, Activity == 4)
+Sub16Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 16, Activity == 5)
+Sub16Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 16, Activity == 6)
+Sub16Lay <- colMeans(sub6)
+Subject16 <- rbind(Sub16Walk, Sub16WalkUp, Sub16WalkDown, Sub16Sit, Sub16Stand, Sub16Lay, deparse.level = 0)
+
+# Subject 17
+sub1 <- filter(newdata, Subject == 17, Activity == 1)
+Sub17Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 17, Activity == 2)
+Sub17WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 17, Activity == 3)
+Sub17WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 17, Activity == 4)
+Sub17Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 17, Activity == 5)
+Sub17Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 17, Activity == 6)
+Sub17Lay <- colMeans(sub6)
+Subject17 <- rbind(Sub17Walk, Sub17WalkUp, Sub17WalkDown, Sub17Sit, Sub17Stand, Sub17Lay, deparse.level = 0)
+
+# Subject 18
+sub1 <- filter(newdata, Subject == 18, Activity == 1)
+Sub18Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 18, Activity == 2)
+Sub18WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 18, Activity == 3)
+Sub18WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 18, Activity == 4)
+Sub18Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 18, Activity == 5)
+Sub18Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 18, Activity == 6)
+Sub18Lay <- colMeans(sub6)
+Subject18 <- rbind(Sub18Walk, Sub18WalkUp, Sub18WalkDown, Sub18Sit, Sub18Stand, Sub18Lay, deparse.level = 0)
+
+# Subject 19
+sub1 <- filter(newdata, Subject == 19, Activity == 1)
+Sub19Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 19, Activity == 2)
+Sub19WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 19, Activity == 3)
+Sub19WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 19, Activity == 4)
+Sub19Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 19, Activity == 5)
+Sub19Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 19, Activity == 6)
+Sub19Lay <- colMeans(sub6)
+Subject19 <- rbind(Sub19Walk, Sub19WalkUp, Sub19WalkDown, Sub19Sit, Sub19Stand, Sub19Lay, deparse.level = 0)
+
+# Subject 20
+sub1 <- filter(newdata, Subject == 20, Activity == 1)
+Sub20Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 20, Activity == 2)
+Sub20WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 20, Activity == 3)
+Sub20WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 20, Activity == 4)
+Sub20Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 20, Activity == 5)
+Sub20Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 20, Activity == 6)
+Sub20Lay <- colMeans(sub6)
+Subject20 <- rbind(Sub20Walk, Sub20WalkUp, Sub20WalkDown, Sub20Sit, Sub20Stand, Sub20Lay, deparse.level = 0)
+
+# Subject 21
+sub1 <- filter(newdata, Subject == 21, Activity == 1)
+Sub21Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 21, Activity == 2)
+Sub21WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 21, Activity == 3)
+Sub21WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 21, Activity == 4)
+Sub21Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 21, Activity == 5)
+Sub21Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 21, Activity == 6)
+Sub21Lay <- colMeans(sub6)
+Subject21 <- rbind(Sub21Walk, Sub21WalkUp, Sub21WalkDown, Sub21Sit, Sub21Stand, Sub21Lay, deparse.level = 0)
+
+# Subject 22
+sub1 <- filter(newdata, Subject == 22, Activity == 1)
+Sub22Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 22, Activity == 2)
+Sub22WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 22, Activity == 3)
+Sub22WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 22, Activity == 4)
+Sub22Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 22, Activity == 5)
+Sub22Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 22, Activity == 6)
+Sub22Lay <- colMeans(sub6)
+Subject22 <- rbind(Sub22Walk, Sub22WalkUp, Sub22WalkDown, Sub22Sit, Sub22Stand, Sub22Lay, deparse.level = 0)
+
+# Subject 23
+sub1 <- filter(newdata, Subject == 23, Activity == 1)
+Sub23Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 23, Activity == 2)
+Sub23WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 23, Activity == 3)
+Sub23WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 23, Activity == 4)
+Sub23Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 23, Activity == 5)
+Sub23Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 23, Activity == 6)
+Sub23Lay <- colMeans(sub6)
+Subject23 <- rbind(Sub23Walk, Sub23WalkUp, Sub23WalkDown, Sub23Sit, Sub23Stand, Sub23Lay, deparse.level = 0)
+
+# Subject 24
+sub1 <- filter(newdata, Subject == 24, Activity == 1)
+Sub24Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 24, Activity == 2)
+Sub24WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 24, Activity == 3)
+Sub24WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 24, Activity == 4)
+Sub24Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 24, Activity == 5)
+Sub24Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 24, Activity == 6)
+Sub24Lay <- colMeans(sub6)
+Subject24 <- rbind(Sub24Walk, Sub24WalkUp, Sub24WalkDown, Sub24Sit, Sub24Stand, Sub24Lay, deparse.level = 0)
+
+# Subject 25
+sub1 <- filter(newdata, Subject == 25, Activity == 1)
+Sub25Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 25, Activity == 2)
+Sub25WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 25, Activity == 3)
+Sub25WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 25, Activity == 4)
+Sub25Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 25, Activity == 5)
+Sub25Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 25, Activity == 6)
+Sub25Lay <- colMeans(sub6)
+Subject25 <- rbind(Sub25Walk, Sub25WalkUp, Sub25WalkDown, Sub25Sit, Sub25Stand, Sub25Lay, deparse.level = 0)
+
+# Subject 26
+sub1 <- filter(newdata, Subject == 26, Activity == 1)
+Sub26Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 26, Activity == 2)
+Sub26WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 26, Activity == 3)
+Sub26WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 26, Activity == 4)
+Sub26Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 26, Activity == 5)
+Sub26Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 26, Activity == 6)
+Sub26Lay <- colMeans(sub6)
+Subject26 <- rbind(Sub26Walk, Sub26WalkUp, Sub26WalkDown, Sub26Sit, Sub26Stand, Sub26Lay, deparse.level = 0)
+
+# Subject 27
+sub1 <- filter(newdata, Subject == 27, Activity == 1)
+Sub27Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 27, Activity == 2)
+Sub27WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 27, Activity == 3)
+Sub27WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 27, Activity == 4)
+Sub27Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 27, Activity == 5)
+Sub27Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 27, Activity == 6)
+Sub27Lay <- colMeans(sub6)
+Subject27 <- rbind(Sub27Walk, Sub27WalkUp, Sub27WalkDown, Sub27Sit, Sub27Stand, Sub27Lay, deparse.level = 0)
+
+# Subject 28
+sub1 <- filter(newdata, Subject == 28, Activity == 1)
+Sub28Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 28, Activity == 2)
+Sub28WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 28, Activity == 3)
+Sub28WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 28, Activity == 4)
+Sub28Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 28, Activity == 5)
+Sub28Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 28, Activity == 6)
+Sub28Lay <- colMeans(sub6)
+Subject28 <- rbind(Sub28Walk, Sub28WalkUp, Sub28WalkDown, Sub28Sit, Sub28Stand, Sub28Lay, deparse.level = 0)
+
+# Subject 29
+sub1 <- filter(newdata, Subject == 29, Activity == 1)
+Sub29Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 29, Activity == 2)
+Sub29WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 29, Activity == 3)
+Sub29WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 29, Activity == 4)
+Sub29Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 29, Activity == 5)
+Sub29Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 29, Activity == 6)
+Sub29Lay <- colMeans(sub6)
+Subject29 <- rbind(Sub29Walk, Sub29WalkUp, Sub29WalkDown, Sub29Sit, Sub29Stand, Sub29Lay, deparse.level = 0)
+
+# Subject 30
+sub1 <- filter(newdata, Subject == 30, Activity == 1)
+Sub30Walk <- colMeans(sub1)
+sub2 <- filter(newdata, Subject == 30, Activity == 2)
+Sub30WalkUp <- colMeans(sub2)
+sub3 <- filter(newdata, Subject == 30, Activity == 3)
+Sub30WalkDown <- colMeans(sub3)
+sub4 <- filter(newdata, Subject == 30, Activity == 4)
+Sub30Sit <- colMeans(sub4)
+sub5 <- filter(newdata, Subject == 30, Activity == 5)
+Sub30Stand <- colMeans(sub5)
+sub6 <- filter(newdata, Subject == 30, Activity == 6)
+Sub30Lay <- colMeans(sub6)
+Subject30 <- rbind(Sub30Walk, Sub30WalkUp, Sub30WalkDown, Sub30Sit, Sub30Stand, Sub30Lay, deparse.level = 0)
+
+# Binds all subject/activity averages into one matrix
+totaldata <- rbind(Subject1, Subject2, Subject3, Subject4, Subject5, Subject6, Subject7, Subject8, Subject9,
+                   Subject10, Subject11, Subject12, Subject13, Subject14, Subject15, Subject16, Subject17,
+                   Subject18, Subject19, Subject20, Subject21, Subject22, Subject23, Subject24, Subject25,
+                   Subject26, Subject27, Subject28, Subject29, Subject30)
+
+# Coerces totaldata into a dataframe
+totaldata <- data.frame(totaldata, row.names = NULL)
+
+# Expresses the totaldata$Activity set as descriptive variables instead of numbers
+totaldata$Activity <- factor(totaldata$Activity, levels = c(1,2,3,4,5,6), labels = c("WALKING", "WALKING_UPSTAIRS", 
+                                                                                 "WALKING_DOWNSTAIRS", "SITTING", 
+                                                                                 "STANDING", "LAYING"))
